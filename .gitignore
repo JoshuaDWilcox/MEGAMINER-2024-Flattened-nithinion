@@ -52,3 +52,6 @@ Joueur.js
 Joueur.lua
 Joueur.py
 Joueur.ts
+
+# PyCharm #
+*.idea/
