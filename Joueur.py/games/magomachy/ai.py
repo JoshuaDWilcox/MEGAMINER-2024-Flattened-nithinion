@@ -90,7 +90,14 @@ class AI(BaseAI):
         Returns:
             bool: Represents if you want to end your turn. True means end your turn, False means to keep your turn going and re-call this function.
         """
+
+
         def valid_choices(self):
+            """This finds valid choices for the server to accept
+
+            Returns:
+                dictionary: Key: actions Value: boolean for valid
+            """
             result = {
                 'move':   False,
                 'attack': False,
@@ -110,12 +117,15 @@ class AI(BaseAI):
             if not self.player.wizard.has_cast and (enemy.wizard.tile == self.player.wizard.tile.tile_east or enemy.wizard.tile == self.player.wizard.tile.tile_west or enemy.wizard.tile == self.player.wizard.tile.tile_north or enemy.wizard.tile == self.player.wizard.tile.tile_south):
                 result['punch'] = True
             return result
+        # END FUNC #
 
+
+        # FIRST TURNS #
         if self.game.current_turn()==0 or self.game.current_turn()==1:
             wizard = 'aggressive'
             self.player.choose_wizard(wizard)
             return True
-        if self.game.current_turn()==2 or self.game.current_turn()==3:
+        elif self.game.current_turn()==2 or self.game.current_turn()==3:
             spell = "Thunderous Dash"
             x = self.player.wizard.tile.x
             y = self.player.wizard.tile.y
@@ -139,6 +149,91 @@ class AI(BaseAI):
                 self.player.wizard.move(tile)
                 tile = self.player.wizard.tile.tile_east
                 self.player.wizard.move(tile)
+            return True
+        # END FIRST TURNS#
+
+
+        # FIND ITEMS #
+        item_list = {
+            'charge_rune':      [],
+            'explosion_rune':   [],
+            'teleport_rune':    [],
+            'heal_rune':        [],
+            'stone_wall':       [],
+            'health_pot':       [],
+            'mana_pot':         []
+        }
+        # FOR BOMBER ONLY #
+        safe_tiles = []
+        tiles = self.game.tiles
+        for x in range(1,self.game.map_width):
+            for y in range(1,self.game.map_height):
+                current_tile = tiles[x + y*self.game.map_width]
+                safe_tiles.append(current_tile)
+                if current_tile.object:
+                    if current_tile.object.form == 'charge rune':
+                        item_list['charge_rune'].append(current_tile)
+                    elif current_tile.object.form == 'heal rune':
+                        item_list['heal_rune'].append(current_tile)
+                    elif current_tile.object.form == 'stone':
+                        item_list['stone_wall'].append(current_tile)
+                        safe_tiles.remove(current_tile)
+                    elif current_tile.object.form == 'explosion rune':
+                        item_list['explosion_rune'].append(current_tile)
+                    elif current_tile.object.form == 'health flask':
+                        item_list['health_pot'].append(current_tile)
+                    elif current_tile.object.form == 'aether flask':
+                        item_list['mana_pot'].append(current_tile)
+                    elif current_tile.object.form == 'teleport rune':
+                        item_list['teleport_rune'].append(current_tile)
+                    elif current_tile.type == 'wall':
+                        safe_tiles.remove(current_tile)
+        # FIND ITEMS #
+
+
+        # ENEMY WIZARD BRANCHING #
+        enemy_type = self.game.players[0]
+        if enemy_type == self.player:
+            enemy_type = self.game.players[1]
+        enemy_type = enemy_type.wizard.specialty
+        first_turn = True
+        if self.game.current_turn % 2 == 1:
+            first_turn = False
+        if enemy_type == 'strategic':
+            if len(item_list['charge_rune']) > 0:
+                temp = [
+                    tile for tile in safe_tiles
+                    if not any(  # Keep it only if there are NO matches with objects
+                        abs(tile.x - charge_rune.x) <= 3 or abs(tile.y - charge_rune.y) <= 3  # Match condition
+                        for charge_rune in item_list['charge_rune']  # Iterate through each object
+                    )
+                ]
+                safe_tiles = temp
+                most_explodey_rune = max(item_list['charge_rune'], key=lambda obj: obj.lifetime)
+                # GET AWAY FROM IT!!!
+                if self.player.wizard.tile not in safe_tiles:
+                    # IN DANGER
+                    nearest_safe_tile = min(
+                        safe_tiles,
+                        key=lambda safe_tile: abs(safe_tile.x - self.player.wizard.x) + abs(safe_tile.y - self.player.wizard.y)  # Manhattan distance
+                    )
+
+
+
+
+
+                # for charge_rune in item_list['charge_rune']:
+
+            # if see charge rune we can reach before it runs out, rush it and push
+
+        elif enemy_type == 'defensive':
+            return True
+        elif enemy_type == 'sustaining':
+            return True
+        elif enemy_type == 'aggressive':
+            return True
+        # ENEMY WIZARD BRANCHING END #
+
 
         # VALID_CHOICES EXAMPLE
         # choices = valid_choices(self)
