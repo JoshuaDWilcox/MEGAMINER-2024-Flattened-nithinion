@@ -91,7 +91,7 @@ class AI(BaseAI):
             bool: Represents if you want to end your turn. True means end your turn, False means to keep your turn going and re-call this function.
         """
 
-
+        # FIND VALID CHOICES #
         def valid_choices(self):
             """This finds valid choices for the server to accept
 
@@ -163,7 +163,7 @@ class AI(BaseAI):
             'health_pot':       [],
             'mana_pot':         []
         }
-        # FOR BOMBER ONLY #
+
         safe_tiles = []
         tiles = self.game.tiles
         for x in range(1,self.game.map_width):
@@ -191,14 +191,108 @@ class AI(BaseAI):
         # FIND ITEMS #
 
 
-        # ENEMY WIZARD BRANCHING #
+        # FIND PATH #
+        def find_path(end_tile, hit_bombs: False):
+            R, C = self.game.map_width, self.game.map_height
+            m = self.game.tiles
+            sr, sc = self.player.wizard.tile.x, self.player.wizard.tile.y
+            rq, cq = [], []
+
+            move_count = 0
+            nodes_left_in_layer = 1
+            nodes_in_next_layer = 0
+
+            reached_end = False
+
+            visited = [False] * ( R * C )
+
+            parent = [-1] * (R * C)
+
+            dr = [-1, +1, 0, 0]
+            dc = [0, 0, +1, -1]
+
+            def solve():
+                nonlocal nodes_left_in_layer
+                nonlocal reached_end
+                nonlocal move_count
+                nonlocal nodes_in_next_layer
+                nonlocal hit_bombs
+                rq.append(sr)
+                cq.append(sc)
+                visited[sr+sc*self.game.map_height]=True
+
+                while len(rq) > 0:
+                    r = rq.pop(0)
+                    c = cq.pop(0)
+
+                    if m[r + c*self.game.map_height] == end_tile:
+                        reached_end = True
+                        break
+
+                    explore_neighbours(r, c)
+                    nodes_left_in_layer -= 1
+
+                    if nodes_left_in_layer == 0:
+                        nodes_left_in_layer += nodes_in_next_layer
+                        nodes_in_next_layer =0
+                        move_count += 1
+
+                if reached_end:
+                    path = []
+                    r, c = end_tile.x, end_tile.y
+                    idx = end_tile.x + end_tile.y*self.game.map_height
+                    while idx != sr + sc * self.game.map_height:
+                        path.append(m[idx])
+                        idx = parent[idx]
+                    path.append(m[sr + sc * self.game.map_height])
+                    path.reverse()
+                    return path
+                return None
+
+            def explore_neighbours(r, c):
+                nonlocal R
+                nonlocal C
+                nonlocal nodes_in_next_layer
+                nonlocal hit_bombs
+                nonlocal end_tile
+                for i in range(4):
+                    rr = r + dr[i]
+                    cc = c + dc[i]
+
+                    if rr < 1 or cc < 1: continue
+                    if rr >= R-1 or cc >= C-1: continue
+
+                    if visited[rr+cc*self.game.map_height]: continue
+                    if m[rr+cc*self.game.map_height].type == 'wall': continue
+                    if not hit_bombs and m[rr + cc * self.game.map_height].object is not None and m[rr + cc * self.game.map_height].object.form == 'explosion rune' and m[rr + cc * self.game.map_height] != end_tile: continue
+
+                    rq.append(rr)
+                    cq.append(cc)
+                    visited[rr+cc*self.game.map_height]=True
+
+                    parent[rr + cc * self.game.map_height] = r + c * self.game.map_height
+
+                    nodes_in_next_layer += 1
+            return solve()
+        # PATH FINDING END #
+
+
+        # ENEMY WIZARD DETECTION #
         enemy_type = self.game.players[0]
         if enemy_type == self.player:
             enemy_type = self.game.players[1]
         enemy_type = enemy_type.wizard.specialty
+        # ENEMY WIZARD DETECTION END #
+
+
+        # FIRST TURN? #
         first_turn = True
         if self.game.current_turn % 2 == 1:
             first_turn = False
+        # FIRST TURN END #
+
+
+        # ENEMY WIZARD BRANCHING #
         if enemy_type == 'strategic':
             if len(item_list['charge_rune']) > 0:
                 temp = [
@@ -210,13 +304,181 @@ class AI(BaseAI):
                 ]
                 safe_tiles = temp
                 most_explodey_rune = max(item_list['charge_rune'], key=lambda obj: obj.lifetime)
+                closest_explodey_rune = min(item_list['charge_rune'], key = lambda obj: abs(obj.x - self.player.wizard.x) + abs(obj.y - self.player.wizard.y))
                 # GET AWAY FROM IT!!!
                 if self.player.wizard.tile not in safe_tiles:
                     # IN DANGER
-                    nearest_safe_tile = min(
-                        safe_tiles,
+                    nearest_safe_tile_no_bomb = min(
+                        (safe_tile for safe_tile in safe_tiles if safe_tile.object is not None and safe_tile.object.form != 'charge rune'),
                         key=lambda safe_tile: abs(safe_tile.x - self.player.wizard.x) + abs(safe_tile.y - self.player.wizard.y)  # Manhattan distance
                     )
+                    path = find_path(nearest_safe_tile_no_bomb, False)
+                    if path is None: #  CHECK PATH WITH BOMBS
+                        return True # delete this # DLETETHE THIS EDELTE THIS DELETE THIS DELETE THIS DELETE THIS
+                    else:
+                        turns_to_traverse = len(path)-1 // 2 + len(path)-1 % 2
+                        turns_till_explosion = (10 - closest_explodey_rune.object.lifetime) // 2 + 1
+                        if turns_till_explosion < turns_to_traverse:
+                            # PATH TOO LONG WITHOUT DASHING #
+                            if self.player.wizard.aether < 4 or turns_till_explosion < turns_to_traverse-1:
+                                # PATH TOO LONG FOR ONE DASH #
+                                if self.player.wizard.aether < 7 or turns_till_explosion < turns_to_traverse-2 :
+                                    # PATH TOO LONG FOR TWO DASH #
+                                    # PATH WITH BOMBS (IMPLEMENT) #
+
+                                    # ========================== PATH WITH BOMBS ========================== #
+
+                                    path = find_path(nearest_safe_tile_no_bomb, True)
+                                    if path is None:
+                                        return True # CHANGE CHANGE CHANGE CHANGE
+                                    else:
+                                        turns_to_traverse = len(path) - 1 // 2 + len(path) - 1 % 2
+                                        if turns_till_explosion < turns_to_traverse:
+                                            # PATH TOO LONG WITHOUT DASHING #
+                                            if self.player.wizard.aether < 4 or turns_till_explosion < turns_to_traverse-1:
+                                                # ONE DASH NOT POSSIBLE TO SAVE #
+                                                if self.player.wizard.aether < 7 or turns_till_explosion < turns_to_traverse-2:
+                                                    # TWO DASH NOT POSSIBLE TO SAVE #
+
+                                                    # ========================== SPACE WITH A BOMB ========================== #
+
+                                                    nearest_safe_tile_with_bomb = min(
+                                                        safe_tiles,
+                                                        key=lambda safe_tile: abs(safe_tile.x - self.player.wizard.x) + abs(safe_tile.y - self.player.wizard.y)
+                                                    )
+                                                    path = find_path(nearest_safe_tile_with_bomb, False)
+                                                    if path is None:
+                                                        return True # CHANCE HCANGE CHANGE CHANGE CHANGE
+                                                    else:
+                                                        turns_to_traverse = len(path) - 1 // 2 + len(path) - 1 % 2
+                                                        if turns_till_explosion < turns_to_traverse:
+                                                            # PATH TOO LONG WITHOUT DASHING #
+                                                            if self.player.wizard.aether < 4 or turns_till_explosion < turns_to_traverse-1:
+                                                                # ONE DASH DOES NOT WORK #
+                                                                if self.player.wizard.aether < 7 or turns_till_explosion < turns_to_traverse-2:
+                                                                    # TWO DASH DOES NOT WORK #
+
+                                                                    # ========================== SPACE WITH A BOMB HITS BOMBS ========================== #
+                                                                    path = find_path(nearest_safe_tile_with_bomb, True)
+                                                                    if path is None:
+                                                                        return True # CHANGE CHANGE CHANGE
+                                                                    else:
+                                                                        turns_to_traverse = len(path) - 1 // 2 + len(path) - 1 % 2
+                                                                        if turns_till_explosion < turns_to_traverse:
+                                                                            # PATH TOO LONG WITHOUT DASHING #
+                                                                            if self.player.wizard.aether < 4 or turns_till_explosion < turns_to_traverse-1:
+                                                                                # ONE DASH NOT POSSIBLE #
+                                                                                if self.player.wizard.aether < 7 or turns_till_explosion < turns_to_traverse-2:
+                                                                                    # TWO DASH NOT POSSIBLE #
+
+                                                                                    # ========================== NEAREST USEABLE POTION ========================== #
+                                                                                    return True
+
+
+                                                                                else:
+                                                                                    # TWO DASH WORKS #
+                                                                                    # DO DASH ONE OF TWO #
+                                                                                    self.player.wizard.cast(
+                                                                                        'Thunderous Dash',
+                                                                                        self.player.wizard.tile)
+                                                                                    # MOVE #
+                                                                                    while self.player.wizard.movement_left > 0:
+                                                                                        path.pop(0)
+                                                                                        self.player.wizard.move(path[0])
+                                                                                    # TWO DASH SCENARIO END #
+                                                                                    return True
+                                                                            else:
+                                                                                # ONE DASH WORKS POSSIBLE #
+                                                                                # DO DASH #
+                                                                                self.player.wizard.cast('Thunderous Dash', self.player.wizard.tile)
+                                                                                # MOVE #
+                                                                                while self.player.wizard.movement_left > 0:
+                                                                                    path.pop(0)
+                                                                                    self.player.wizard.move(path[0])
+                                                                                # ONE DASH SCENARIO END #
+                                                                                return True
+                                                                        else:
+                                                                            # PATH POSSIBLE TO WALK OUT OF #
+                                                                            return True
+
+
+
+                                                                else:
+                                                                    # TWO DASH POSSIBLE WORKS #
+                                                                    # DO DASH ONE OF TWO #
+                                                                    self.player.wizard.cast('Thunderous Dash', self.player.wizard.tile)
+                                                                    # MOVE #
+                                                                    while self.player.wizard.movement_left > 0:
+                                                                        path.pop(0)
+                                                                        self.player.wizard.move(path[0])
+                                                                    # TWO DASH SCENARIO END #
+                                                                    return True
+                                                            else:
+                                                                # ONE DASH POSSIBLE, WORKS #
+                                                                # DO DASH #
+                                                                self.player.wizard.cast('Thunderous Dash',self.player.wizard.tile)
+                                                                # MOVE #
+                                                                while self.player.wizard.movement_left > 0:
+                                                                    path.pop(0)
+                                                                    self.player.wizard.move(path[0])
+                                                                # ONE DASH SCENARIO END #
+                                                                return True
+                                                        else:
+                                                            # PATH POSSIBLE WITHOUT DASHING #
+                                                            return True
+
+
+                                                else:
+                                                    # TWO DASH SAVES AND CAN DASH TWICE #
+                                                    # DO DASH ONE OF TWO #
+                                                    self.player.wizard.cast('Thunderous Dash', self.player.wizard.tile)
+                                                    # MOVE #
+                                                    while self.player.wizard.movement_left > 0:
+                                                        path.pop(0)
+                                                        self.player.wizard.move(path[0])
+                                                    # TWO DASH SCENARIO END #
+                                                    return True
+                                            else:
+                                                # ONE DASH SAVES AND CAN DASH #
+                                                # DO DASH #
+                                                self.player.wizard.cast('Thunderous Dash', self.player.wizard.tile)
+                                                # MOVE #
+                                                while self.player.wizard.movement_left > 0:
+                                                    path.pop(0)
+                                                    self.player.wizard.move(path[0])
+                                                # ONE DASH SCENARIO END #
+                                                return True
+                                        else:
+                                            # PATH NOT TOO LONG WITHOUT DASHING #
+
+                                            return True
+
+                                else:
+                                    # TWO DASH SAVES #
+                                    # DO DASH ONE OF TWO #
+                                    self.player.wizard.cast('Thunderous Dash',self.player.wizard.tile)
+                                    # MOVE #
+                                    while self.player.wizard.movement_left > 0:
+                                        path.pop(0)
+                                        self.player.wizard.move(path[0])
+                                    # TWO DASH SCENARIO END #
+                                    return True
+                            else:
+                                # ONE DASH SAVES #
+                                if self.player.wizard.aether >= 4 and not self.player.wizard.has_cast:
+                                    # DO DASH #
+                                    self.player.wizard.cast('Thunderous Dash',self.player.wizard.tile)
+                                    # MOVE #
+                                    while self.player.wizard.movement_left > 0:
+                                        path.pop(0)
+                                        self.player.wizard.move(path[0])
+                                    # ONE DASH SCENARIO END #
+                                    return True
+                        else:
+                            # PATH NOT TOO LONG #
+                            # POSSIBLY ADD MANA POTIONS LATER #
+
+                            return True
 
 
 
