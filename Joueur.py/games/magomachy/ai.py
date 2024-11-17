@@ -121,11 +121,11 @@ class AI(BaseAI):
 
 
         # FIRST TURNS #
-        if self.game.current_turn()==0 or self.game.current_turn()==1:
+        if self.game.current_turn==0 or self.game.current_turn==1:
             wizard = 'aggressive'
             self.player.choose_wizard(wizard)
             return True
-        elif self.game.current_turn()==2 or self.game.current_turn()==3:
+        elif self.game.current_turn==2 or self.game.current_turn==3:
             spell = "Thunderous Dash"
             x = self.player.wizard.tile.x
             y = self.player.wizard.tile.y
@@ -166,18 +166,18 @@ class AI(BaseAI):
 
         safe_tiles = []
         tiles = self.game.tiles
-        for x in range(1,self.game.map_width):
-            for y in range(1,self.game.map_height):
+        for x in range(self.game.map_width):
+            for y in range(self.game.map_height):
                 current_tile = tiles[x + y*self.game.map_width]
                 safe_tiles.append(current_tile)
                 if current_tile.object:
                     if current_tile.object.form == 'charge rune':
                         item_list['charge_rune'].append(current_tile)
+                        print(f'Charge rune found at x: {current_tile.x}, y: {current_tile.y}')
                     elif current_tile.object.form == 'heal rune':
                         item_list['heal_rune'].append(current_tile)
                     elif current_tile.object.form == 'stone':
                         item_list['stone_wall'].append(current_tile)
-                        safe_tiles.remove(current_tile)
                     elif current_tile.object.form == 'explosion rune':
                         item_list['explosion_rune'].append(current_tile)
                     elif current_tile.object.form == 'health flask':
@@ -186,8 +186,7 @@ class AI(BaseAI):
                         item_list['mana_pot'].append(current_tile)
                     elif current_tile.object.form == 'teleport rune':
                         item_list['teleport_rune'].append(current_tile)
-                    elif current_tile.type == 'wall':
-                        safe_tiles.remove(current_tile)
+
         # FIND ITEMS #
 
 
@@ -295,30 +294,64 @@ class AI(BaseAI):
         # ENEMY WIZARD BRANCHING #
         if enemy_type == 'strategic':
             if len(item_list['charge_rune']) > 0:
-                temp = [
-                    tile for tile in safe_tiles
-                    if not any(  # Keep it only if there are NO matches with objects
-                        abs(tile.x - charge_rune.x) <= 3 or abs(tile.y - charge_rune.y) <= 3  # Match condition
-                        for charge_rune in item_list['charge_rune']  # Iterate through each object
-                    )
-                ]
-                safe_tiles = temp
-                most_explodey_rune = max(item_list['charge_rune'], key=lambda obj: obj.lifetime)
-                closest_explodey_rune = min(item_list['charge_rune'], key = lambda obj: abs(obj.x - self.player.wizard.x) + abs(obj.y - self.player.wizard.y))
+                print(f'charge runes found: {len(item_list["charge_rune"])}')
+                print(f'safe_tiles size before filtering {len(safe_tiles)}')
+                filtered_safe_tiles = safe_tiles
+                for current_tile in safe_tiles:
+                    for charge_rune in item_list["charge_rune"]:
+                        if abs(current_tile.x - charge_rune.x) <= 3 or abs(current_tile.y - charge_rune.y) <= 3:
+                            filtered_safe_tiles.remove(current_tile)
+                            break
+                    if current_tile.type == 'wall':
+                        filtered_safe_tiles.remove(current_tile)
+
+                print(f'safe_tiles size after filtering {len(filtered_safe_tiles)}')
+                # temp = [
+                #     tile for tile in safe_tiles
+                #     if not any(  # Keep it only if there are NO matches with objects
+                #         abs(tile.x - charge_rune.x) <= 3 or abs(tile.y - charge_rune.y) <= 3  # Match condition
+                #         for charge_rune in item_list['charge_rune']  # Iterate through each object
+                #     )
+                # ]
+                # safe_tiles = temp
+
+                most_explodey_rune = max(item_list['charge_rune'], key=lambda obj: obj.object.lifetime)
+                closest_explodey_rune = item_list['charge_rune'][0]
+                min_dist = 100
+                for charge_rune in item_list['charge_rune']:
+                    if abs(charge_rune.x - self.player.wizard.tile.x) + abs(charge_rune.y - self.player.wizard.tile.y) < min_dist:
+                        min_dist = abs(charge_rune.x - self.player.wizard.tile.x) + abs(charge_rune.y - self.player.wizard.tile.y)
+                        print(f'min_dist : {min_dist}')
+                        closest_explodey_rune = charge_rune
+
                 # GET AWAY FROM IT!!!
-                if self.player.wizard.tile not in safe_tiles:
+                print(f'wizard tile location: {self.player.wizard.tile.x}, {self.player.wizard.tile.y}')
+                print(f'closest charge rune location: {closest_explodey_rune.x}, {closest_explodey_rune.y}')
+                # if self.player.wizard.tile not in safe_tiles:
+                if not any(tile.x == self.player.wizard.tile.x and tile.y == self.player.wizard.tile.y for tile in filtered_safe_tiles):
+                    print(f'Im in danger')
                     # IN DANGER
-                    nearest_safe_tile_no_bomb = min(
-                        (safe_tile for safe_tile in safe_tiles if safe_tile.object is not None and safe_tile.object.form != 'charge rune'),
-                        key=lambda safe_tile: abs(safe_tile.x - self.player.wizard.x) + abs(safe_tile.y - self.player.wizard.y)  # Manhattan distance
-                    )
+                    nearest_safe_tile_no_bomb = None
+                    min_dist = 100
+                    for safe_tile in filtered_safe_tiles:
+                        if safe_tile.object is not None and safe_tile.object.form != 'charge rune':
+                            if abs(safe_tile.x - self.player.wizard.tile.x) + abs(safe_tile.y - self.player.wizard.tile.y) < min_dist:
+                                nearest_safe_tile_no_bomb = safe_tile
+
+                    # nearest_safe_tile_no_bomb = min(
+                    #     (safe_tile for safe_tile in safe_tiles if safe_tile.object is not None and safe_tile.object.form != 'charge rune'),
+                    #     key=lambda safe_tile: abs(safe_tile.x - self.player.wizard.tile.x) + abs(safe_tile.y - self.player.wizard.tile.y)  # Manhattan distance
+                    # )
                     path = find_path(nearest_safe_tile_no_bomb, False)
                     if path is None: #  CHECK PATH WITH BOMBS
+                        print('no path found')
                         return True # delete this # DLETETHE THIS EDELTE THIS DELETE THIS DELETE THIS DELETE THIS
                     else:
+                        print('path found')
                         turns_to_traverse = len(path)-1 // 2 + len(path)-1 % 2
                         turns_till_explosion = (10 - closest_explodey_rune.object.lifetime) // 2 + 1
                         if turns_till_explosion < turns_to_traverse:
+                            print('i have to dash (im a liar)')
                             # PATH TOO LONG WITHOUT DASHING #
                             if self.player.wizard.aether < 4 or turns_till_explosion < turns_to_traverse-1:
                                 # PATH TOO LONG FOR ONE DASH #
@@ -343,8 +376,8 @@ class AI(BaseAI):
                                                     # ========================== SPACE WITH A BOMB ========================== #
 
                                                     nearest_safe_tile_with_bomb = min(
-                                                        safe_tiles,
-                                                        key=lambda safe_tile: abs(safe_tile.x - self.player.wizard.x) + abs(safe_tile.y - self.player.wizard.y)
+                                                        filtered_safe_tiles,
+                                                        key=lambda safe_tile: abs(safe_tile.x - self.player.wizard.tile.x) + abs(safe_tile.y - self.player.wizard.tile.y)
                                                     )
                                                     path = find_path(nearest_safe_tile_with_bomb, False)
                                                     if path is None:
@@ -382,7 +415,7 @@ class AI(BaseAI):
                                                                                         'Thunderous Dash',
                                                                                         self.player.wizard.tile)
                                                                                     # MOVE #
-                                                                                    while self.player.wizard.movement_left > 0:
+                                                                                    while self.player.wizard.movement_left > 0 and len(path) > 1:
                                                                                         path.pop(0)
                                                                                         self.player.wizard.move(path[0])
                                                                                     # TWO DASH SCENARIO END #
@@ -392,7 +425,7 @@ class AI(BaseAI):
                                                                                 # DO DASH #
                                                                                 self.player.wizard.cast('Thunderous Dash', self.player.wizard.tile)
                                                                                 # MOVE #
-                                                                                while self.player.wizard.movement_left > 0:
+                                                                                while self.player.wizard.movement_left > 0 and len(path) > 1:
                                                                                     path.pop(0)
                                                                                     self.player.wizard.move(path[0])
                                                                                 # ONE DASH SCENARIO END #
@@ -408,7 +441,7 @@ class AI(BaseAI):
                                                                     # DO DASH ONE OF TWO #
                                                                     self.player.wizard.cast('Thunderous Dash', self.player.wizard.tile)
                                                                     # MOVE #
-                                                                    while self.player.wizard.movement_left > 0:
+                                                                    while self.player.wizard.movement_left > 0 and len(path) > 1:
                                                                         path.pop(0)
                                                                         self.player.wizard.move(path[0])
                                                                     # TWO DASH SCENARIO END #
@@ -418,7 +451,7 @@ class AI(BaseAI):
                                                                 # DO DASH #
                                                                 self.player.wizard.cast('Thunderous Dash',self.player.wizard.tile)
                                                                 # MOVE #
-                                                                while self.player.wizard.movement_left > 0:
+                                                                while self.player.wizard.movement_left > 0 and len(path) > 1:
                                                                     path.pop(0)
                                                                     self.player.wizard.move(path[0])
                                                                 # ONE DASH SCENARIO END #
@@ -433,7 +466,7 @@ class AI(BaseAI):
                                                     # DO DASH ONE OF TWO #
                                                     self.player.wizard.cast('Thunderous Dash', self.player.wizard.tile)
                                                     # MOVE #
-                                                    while self.player.wizard.movement_left > 0:
+                                                    while self.player.wizard.movement_left > 0 and len(path) > 1:
                                                         path.pop(0)
                                                         self.player.wizard.move(path[0])
                                                     # TWO DASH SCENARIO END #
@@ -443,7 +476,7 @@ class AI(BaseAI):
                                                 # DO DASH #
                                                 self.player.wizard.cast('Thunderous Dash', self.player.wizard.tile)
                                                 # MOVE #
-                                                while self.player.wizard.movement_left > 0:
+                                                while self.player.wizard.movement_left > 0 and len(path) > 1:
                                                     path.pop(0)
                                                     self.player.wizard.move(path[0])
                                                 # ONE DASH SCENARIO END #
@@ -458,7 +491,7 @@ class AI(BaseAI):
                                     # DO DASH ONE OF TWO #
                                     self.player.wizard.cast('Thunderous Dash',self.player.wizard.tile)
                                     # MOVE #
-                                    while self.player.wizard.movement_left > 0:
+                                    while self.player.wizard.movement_left > 0 and len(path) > 1:
                                         path.pop(0)
                                         self.player.wizard.move(path[0])
                                     # TWO DASH SCENARIO END #
@@ -469,7 +502,7 @@ class AI(BaseAI):
                                     # DO DASH #
                                     self.player.wizard.cast('Thunderous Dash',self.player.wizard.tile)
                                     # MOVE #
-                                    while self.player.wizard.movement_left > 0:
+                                    while self.player.wizard.movement_left > 0 and len(path) > 1:
                                         path.pop(0)
                                         self.player.wizard.move(path[0])
                                     # ONE DASH SCENARIO END #
@@ -477,16 +510,25 @@ class AI(BaseAI):
                         else:
                             # PATH NOT TOO LONG #
                             # POSSIBLY ADD MANA POTIONS LATER #
-
+                            # MOVE #
+                            print('i dont have to dash!')
+                            while self.player.wizard.movement_left > 0 and len(path) > 1:
+                                path.pop(0)
+                                self.player.wizard.move(path[0])
                             return True
+                else:
+                    print(f'No danger! (im probably a liar)')
+
 
 
 
 
 
                 # for charge_rune in item_list['charge_rune']:
+            else:
+                print('no charge runes found')
 
-            # if see charge rune we can reach before it runs out, rush it and push
+            # if you see charge rune we can reach before it runs out, rush it and push
 
         elif enemy_type == 'defensive':
             return True
