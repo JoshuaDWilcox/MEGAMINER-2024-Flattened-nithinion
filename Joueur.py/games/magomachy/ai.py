@@ -92,19 +92,22 @@ class AI(BaseAI):
         """
 
 
-        # ENEMY WIZARD DETECTION #
-        enemy = self.game.players[0]
-        if enemy == self.player:
-            enemy = self.game.players[1]
-        enemy_type = enemy.wizard.specialty
-        # ENEMY WIZARD DETECTION END #
 
+        enemy_type = None
+        enemy = None
         # FIRST TURNS #
         if self.game.current_turn==0 or self.game.current_turn==1:
             wizard = 'aggressive'
             self.player.choose_wizard(wizard)
             return True
-        elif enemy_type != 'aggressive' and (self.game.current_turn==2 or self.game.current_turn==3):
+        else:
+            # ENEMY WIZARD DETECTION #
+            enemy = self.game.players[0]
+            if enemy == self.player:
+                enemy = self.game.players[1]
+            enemy_type = enemy.wizard.specialty
+            # ENEMY WIZARD DETECTION END #
+        if enemy_type is not None and enemy_type != 'aggressive' and (self.game.current_turn==2 or self.game.current_turn==3):
             spell = "Thunderous Dash"
             x = self.player.wizard.tile.x
             y = self.player.wizard.tile.y
@@ -322,8 +325,8 @@ class AI(BaseAI):
                         closest_explodey_rune = charge_rune
                 shortest_timer_rune = -1
                 for charge_rune in item_list['charge_rune']:
-                    if charge_rune.lifetime > shortest_timer_rune:
-                        shortest_timer_rune = charge_rune.lifetime
+                    if charge_rune.object.lifetime > shortest_timer_rune:
+                        shortest_timer_rune = charge_rune.object.lifetime
 
                 # CLASSIFICATION END #
 
@@ -475,6 +478,8 @@ class AI(BaseAI):
                                                                                             if len(temp_path) < min_path_len:
                                                                                                 path = temp_path
                                                                                                 min_path_len = len(temp_path)
+                                                                                        if min_path_len < 100:
+                                                                                            print(f'health pot found, {min_path_len} away')
 
 
 
@@ -516,8 +521,7 @@ class AI(BaseAI):
                                                                             print('i dont have to dash!')
                                                                             while self.player.wizard.movement_left > 0 and len(path) > 1:
                                                                                 if not self.player.wizard.has_cast:
-                                                                                    if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                                                                            enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                                                                                    if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                                                                                         if enemy.wizard.health == 1:
                                                                                             self.player.wizard.cast(
                                                                                                 'Punch',
@@ -534,7 +538,7 @@ class AI(BaseAI):
                                                                                             self.player.wizard.cast(
                                                                                                 'Punch',
                                                                                                 enemy.wizard.tile)
-                                                                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                                                                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                                                                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                                                             self.player.wizard.cast(
                                                                                                 'Fire Slash',
@@ -543,7 +547,7 @@ class AI(BaseAI):
                                                                                             self.player.wizard.cast(
                                                                                                 'Fire Slash',
                                                                                                 enemy.wizard.tile)
-                                                                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                                                                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                                                                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                                                             self.player.wizard.cast(
                                                                                                 'Fire Slash',
@@ -552,7 +556,7 @@ class AI(BaseAI):
                                                                                             self.player.wizard.cast(
                                                                                                 'Fire Slash',
                                                                                                 enemy.wizard.tile)
-                                                                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                                                                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                                                                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                                                             self.player.wizard.cast(
                                                                                                 'Fire Slash',
@@ -561,7 +565,7 @@ class AI(BaseAI):
                                                                                             self.player.wizard.cast(
                                                                                                 'Fire Slash',
                                                                                                 enemy.wizard.tile)
-                                                                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                                                                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                                                                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                                                             self.player.wizard.cast(
                                                                                                 'Fire Slash',
@@ -574,8 +578,7 @@ class AI(BaseAI):
                                                                                 self.player.wizard.move(path[0])
 
                                                                             if not self.player.wizard.has_cast:
-                                                                                if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                                                                        enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                                                                                if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                                                                                     if enemy.wizard.health == 1:
                                                                                         self.player.wizard.cast('Punch',
                                                                                                                 enemy.wizard.tile)
@@ -590,7 +593,7 @@ class AI(BaseAI):
                                                                                     else:
                                                                                         self.player.wizard.cast('Punch',
                                                                                                                 enemy.wizard.tile)
-                                                                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                                                                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                                                                                     if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                                                         self.player.wizard.cast(
                                                                                             'Fire Slash',
@@ -599,7 +602,7 @@ class AI(BaseAI):
                                                                                         self.player.wizard.cast(
                                                                                             'Fire Slash',
                                                                                             enemy.wizard.tile)
-                                                                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                                                                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                                                                                     if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                                                         self.player.wizard.cast(
                                                                                             'Fire Slash',
@@ -608,7 +611,7 @@ class AI(BaseAI):
                                                                                         self.player.wizard.cast(
                                                                                             'Fire Slash',
                                                                                             enemy.wizard.tile)
-                                                                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                                                                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                                                                                     if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                                                         self.player.wizard.cast(
                                                                                             'Fire Slash',
@@ -617,7 +620,7 @@ class AI(BaseAI):
                                                                                         self.player.wizard.cast(
                                                                                             'Fire Slash',
                                                                                             enemy.wizard.tile)
-                                                                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                                                                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                                                                                     if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                                                         self.player.wizard.cast(
                                                                                             'Fire Slash',
@@ -657,8 +660,7 @@ class AI(BaseAI):
                                                             print('i dont have to dash!')
                                                             while self.player.wizard.movement_left > 0 and len(path) > 1:
                                                                 if not self.player.wizard.has_cast:
-                                                                    if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                                                            enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                                                                    if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                                                                         if enemy.wizard.health == 1:
                                                                             self.player.wizard.cast('Punch',
                                                                                                     enemy.wizard.tile)
@@ -671,28 +673,28 @@ class AI(BaseAI):
                                                                         else:
                                                                             self.player.wizard.cast('Punch',
                                                                                                     enemy.wizard.tile)
-                                                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                                                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                                                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                                             self.player.wizard.cast('Fire Slash',
                                                                                                     enemy.wizard.tile)
                                                                         elif self.player.wizard.aether > 2:
                                                                             self.player.wizard.cast('Fire Slash',
                                                                                                     enemy.wizard.tile)
-                                                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                                                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                                                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                                             self.player.wizard.cast('Fire Slash',
                                                                                                     enemy.wizard.tile)
                                                                         elif self.player.wizard.aether > 2:
                                                                             self.player.wizard.cast('Fire Slash',
                                                                                                     enemy.wizard.tile)
-                                                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                                                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                                                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                                             self.player.wizard.cast('Fire Slash',
                                                                                                     enemy.wizard.tile)
                                                                         elif self.player.wizard.aether > 2:
                                                                             self.player.wizard.cast('Fire Slash',
                                                                                                     enemy.wizard.tile)
-                                                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                                                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                                                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                                             self.player.wizard.cast('Fire Slash',
                                                                                                     enemy.wizard.tile)
@@ -703,8 +705,7 @@ class AI(BaseAI):
                                                                 self.player.wizard.move(path[0])
 
                                                             if not self.player.wizard.has_cast:
-                                                                if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                                                        enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                                                                if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                                                                     if enemy.wizard.health == 1:
                                                                         self.player.wizard.cast('Punch',
                                                                                                 enemy.wizard.tile)
@@ -717,28 +718,28 @@ class AI(BaseAI):
                                                                     else:
                                                                         self.player.wizard.cast('Punch',
                                                                                                 enemy.wizard.tile)
-                                                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                                                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                                                                     if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                                         self.player.wizard.cast('Fire Slash',
                                                                                                 enemy.wizard.tile)
                                                                     elif self.player.wizard.aether > 2:
                                                                         self.player.wizard.cast('Fire Slash',
                                                                                                 enemy.wizard.tile)
-                                                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                                                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                                                                     if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                                         self.player.wizard.cast('Fire Slash',
                                                                                                 enemy.wizard.tile)
                                                                     elif self.player.wizard.aether > 2:
                                                                         self.player.wizard.cast('Fire Slash',
                                                                                                 enemy.wizard.tile)
-                                                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                                                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                                                                     if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                                         self.player.wizard.cast('Fire Slash',
                                                                                                 enemy.wizard.tile)
                                                                     elif self.player.wizard.aether > 2:
                                                                         self.player.wizard.cast('Fire Slash',
                                                                                                 enemy.wizard.tile)
-                                                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                                                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                                                                     if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                                         self.player.wizard.cast('Fire Slash',
                                                                                                 enemy.wizard.tile)
@@ -775,8 +776,7 @@ class AI(BaseAI):
                                             print('i dont have to dash!')
                                             while self.player.wizard.movement_left > 0 and len(path) > 1:
                                                 if not self.player.wizard.has_cast:
-                                                    if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                                            enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                                                    if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                                                         if enemy.wizard.health == 1:
                                                             self.player.wizard.cast('Punch', enemy.wizard.tile)
                                                         elif enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
@@ -785,22 +785,22 @@ class AI(BaseAI):
                                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                                         else:
                                                             self.player.wizard.cast('Punch', enemy.wizard.tile)
-                                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                                         elif self.player.wizard.aether > 2:
                                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                                         elif self.player.wizard.aether > 2:
                                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                                         elif self.player.wizard.aether > 2:
                                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                                         elif self.player.wizard.aether > 2:
@@ -809,8 +809,7 @@ class AI(BaseAI):
                                                 self.player.wizard.move(path[0])
 
                                             if not self.player.wizard.has_cast:
-                                                if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                                        enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                                                if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                                                     if enemy.wizard.health == 1:
                                                         self.player.wizard.cast('Punch', enemy.wizard.tile)
                                                     elif enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
@@ -819,22 +818,22 @@ class AI(BaseAI):
                                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                                     else:
                                                         self.player.wizard.cast('Punch', enemy.wizard.tile)
-                                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                                                     if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                                     elif self.player.wizard.aether > 2:
                                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                                                     if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                                     elif self.player.wizard.aether > 2:
                                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                                                     if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                                     elif self.player.wizard.aether > 2:
                                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                                                     if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                                     elif self.player.wizard.aether > 2:
@@ -870,8 +869,7 @@ class AI(BaseAI):
                             print('i dont have to dash!')
                             while self.player.wizard.movement_left > 0 and len(path) > 1:
                                 if not self.player.wizard.has_cast:
-                                    if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                            enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                                    if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                                         if enemy.wizard.health == 1:
                                             self.player.wizard.cast('Punch', enemy.wizard.tile)
                                         elif enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
@@ -880,22 +878,22 @@ class AI(BaseAI):
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                         else:
                                             self.player.wizard.cast('Punch', enemy.wizard.tile)
-                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                         elif self.player.wizard.aether > 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                         elif self.player.wizard.aether > 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                         elif self.player.wizard.aether > 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                         elif self.player.wizard.aether > 2:
@@ -904,7 +902,7 @@ class AI(BaseAI):
                                 self.player.wizard.move(path[0])
 
                             if not self.player.wizard.has_cast:
-                                if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                                if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                                     if enemy.wizard.health == 1:
                                         self.player.wizard.cast('Punch',enemy.wizard.tile)
                                     elif enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
@@ -913,22 +911,22 @@ class AI(BaseAI):
                                         self.player.wizard.cast('Fire Slash',enemy.wizard.tile)
                                     else:
                                         self.player.wizard.cast('Punch',enemy.wizard.tile)
-                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                                     if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                         self.player.wizard.cast('Fire Slash',enemy.wizard.tile)
                                     elif self.player.wizard.aether > 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                                     if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                         self.player.wizard.cast('Fire Slash',enemy.wizard.tile)
                                     elif self.player.wizard.aether > 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                                     if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                         self.player.wizard.cast('Fire Slash',enemy.wizard.tile)
                                     elif self.player.wizard.aether > 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                                     if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                         self.player.wizard.cast('Fire Slash',enemy.wizard.tile)
                                     elif self.player.wizard.aether > 2:
@@ -950,8 +948,7 @@ class AI(BaseAI):
                                     dangerous = False
                             if not dangerous:
                                 if not self.player.wizard.has_cast:
-                                    if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                            enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                                    if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                                         if enemy.wizard.health == 1:
                                             self.player.wizard.cast('Punch', enemy.wizard.tile)
                                         elif enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
@@ -960,30 +957,29 @@ class AI(BaseAI):
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                         else:
                                             self.player.wizard.cast('Punch', enemy.wizard.tile)
-                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                         elif self.player.wizard.aether > 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                         elif self.player.wizard.aether > 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                         elif self.player.wizard.aether > 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                         elif self.player.wizard.aether > 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 self.player.wizard.move(next_tile)
                         if not self.player.wizard.has_cast:
-                            if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                    enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                            if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                                 if enemy.wizard.health == 1:
                                     self.player.wizard.cast('Punch', enemy.wizard.tile)
                                 elif enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
@@ -992,22 +988,22 @@ class AI(BaseAI):
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 else:
                                     self.player.wizard.cast('Punch', enemy.wizard.tile)
-                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                                 if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                                 if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                                 if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                                 if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
@@ -1033,8 +1029,7 @@ class AI(BaseAI):
                     while self.player.wizard.movement_left > 0:
                         next_tile = path[0]
                         if not self.player.wizard.has_cast:
-                            if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                    enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                            if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                                 if enemy.wizard.health == 1:
                                     self.player.wizard.cast('Punch', enemy.wizard.tile)
                                 elif enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
@@ -1043,30 +1038,29 @@ class AI(BaseAI):
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 else:
                                     self.player.wizard.cast('Punch', enemy.wizard.tile)
-                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                                 if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                                 if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                                 if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                                 if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         self.player.wizard.move(next_tile)
                     if not self.player.wizard.has_cast:
-                        if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                        if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                             if enemy.wizard.health == 1:
                                 self.player.wizard.cast('Punch', enemy.wizard.tile)
                             elif enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
@@ -1075,22 +1069,22 @@ class AI(BaseAI):
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             else:
                                 self.player.wizard.cast('Punch', enemy.wizard.tile)
-                        elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                        elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                             if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             elif self.player.wizard.aether > 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                        elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                        elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                             if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             elif self.player.wizard.aether > 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                        elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                        elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                             if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             elif self.player.wizard.aether > 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                        elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                        elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                             if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             elif self.player.wizard.aether > 2:
@@ -1113,8 +1107,7 @@ class AI(BaseAI):
             if not any(tile.x == self.player.wizard.tile.x and tile.y == self.player.wizard.tile.y for tile in
                        filtered_safe_tiles):
                 if not self.player.wizard.has_cast:  # changed kill threshold from 5 to 8
-                    if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                            enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                    if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                         if enemy.wizard.health == 1:
                             self.player.wizard.cast('Punch', enemy.wizard.tile)
                         elif enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
@@ -1123,22 +1116,22 @@ class AI(BaseAI):
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         else:
                             self.player.wizard.cast('Punch', enemy.wizard.tile)
-                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                         if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         elif self.player.wizard.aether > 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                         if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         elif self.player.wizard.aether > 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                         if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         elif self.player.wizard.aether > 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                         if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         elif self.player.wizard.aether > 2:
@@ -1147,8 +1140,7 @@ class AI(BaseAI):
                 if path is not None:
                     while self.player.wizard.movement_left > 0 and len(path) > 1:
                         if not self.player.wizard.has_cast:  # changed kill threshold from 5 to 3
-                            if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                    enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                            if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                                 if enemy.wizard.health == 1:
                                     self.player.wizard.cast('Punch', enemy.wizard.tile)
                                 elif enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
@@ -1157,22 +1149,22 @@ class AI(BaseAI):
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 else:
                                     self.player.wizard.cast('Punch', enemy.wizard.tile)
-                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                                 if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                                 if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                                 if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                                 if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
@@ -1180,7 +1172,7 @@ class AI(BaseAI):
                         path.pop(0)
                         self.player.wizard.move(path[0])
                     if not self.player.wizard.has_cast:  # changed kill threshold from 5 to 3
-                        if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                        if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                             if enemy.wizard.health == 1:
                                 self.player.wizard.cast('Punch', enemy.wizard.tile)
                             elif enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
@@ -1189,22 +1181,22 @@ class AI(BaseAI):
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             else:
                                 self.player.wizard.cast('Punch', enemy.wizard.tile)
-                        elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                        elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                             if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             elif self.player.wizard.aether > 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                        elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                        elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                             if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             elif self.player.wizard.aether > 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                        elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                        elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                             if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             elif self.player.wizard.aether > 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                        elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                        elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                             if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             elif self.player.wizard.aether > 2:
@@ -1227,8 +1219,7 @@ class AI(BaseAI):
                                     dangerous = False
                             if not dangerous:
                                 if not self.player.wizard.has_cast:
-                                    if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                            enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                                    if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                                         if enemy.wizard.health == 1:
                                             self.player.wizard.cast('Punch', enemy.wizard.tile)
                                         elif enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
@@ -1237,30 +1228,29 @@ class AI(BaseAI):
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                         else:
                                             self.player.wizard.cast('Punch', enemy.wizard.tile)
-                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                                         if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                         elif self.player.wizard.aether > 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                                         if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                         elif self.player.wizard.aether > 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                                         if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                         elif self.player.wizard.aether > 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                                         if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                         elif self.player.wizard.aether > 2:
                                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 self.player.wizard.move(next_tile)
                         if not self.player.wizard.has_cast:
-                            if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                    enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                            if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                                 if enemy.wizard.health == 1:
                                     self.player.wizard.cast('Punch', enemy.wizard.tile)
                                 elif enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
@@ -1269,22 +1259,22 @@ class AI(BaseAI):
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 else:
                                     self.player.wizard.cast('Punch', enemy.wizard.tile)
-                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                                 if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                                 if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                                 if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                                 if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
@@ -1309,8 +1299,7 @@ class AI(BaseAI):
                                 dangerous = False
                         if not dangerous:
                             if not self.player.wizard.has_cast:
-                                if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                        enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                                if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                                     if enemy.wizard.health == 1:
                                         self.player.wizard.cast('Punch', enemy.wizard.tile)
                                     elif enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
@@ -1319,30 +1308,29 @@ class AI(BaseAI):
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                     else:
                                         self.player.wizard.cast('Punch', enemy.wizard.tile)
-                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                                     if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                     elif self.player.wizard.aether > 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                                     if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                     elif self.player.wizard.aether > 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                                     if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                     elif self.player.wizard.aether > 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                                     if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                     elif self.player.wizard.aether > 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             self.player.wizard.move(next_tile)
                     if not self.player.wizard.has_cast:
-                        if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                        if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                             if enemy.wizard.health == 1:
                                 self.player.wizard.cast('Punch', enemy.wizard.tile)
                             elif enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
@@ -1351,22 +1339,22 @@ class AI(BaseAI):
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             else:
                                 self.player.wizard.cast('Punch', enemy.wizard.tile)
-                        elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                        elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                             if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             elif self.player.wizard.aether > 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                        elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                        elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                             if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             elif self.player.wizard.aether > 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                        elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                        elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                             if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             elif self.player.wizard.aether > 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                        elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                        elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                             if enemy.wizard.health <= 3 and self.player.wizard.aether >= 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             elif self.player.wizard.aether > 2:
@@ -1384,19 +1372,19 @@ class AI(BaseAI):
             if enemy.wizard.tile.tile_north.type == 'floor':
                 detect_lasers(enemy.wizard.tile.tile_north,laser_beam_tiles)
                 if enemy.wizard.tile.tile_north.tile_north.type == 'floor':
-                    detect_lasers(enemy.wizard.tile_north.tile_north, laser_beam_tiles)
+                    detect_lasers(enemy.wizard.tile.tile_north.tile_north, laser_beam_tiles)
             if enemy.wizard.tile.tile_south.type == 'floor':
                 detect_lasers(enemy.wizard.tile.tile_south,laser_beam_tiles)
                 if enemy.wizard.tile.tile_south.tile_south.type == 'floor':
-                    detect_lasers(enemy.wizard.tile_south.tile_south, laser_beam_tiles)
+                    detect_lasers(enemy.wizard.tile.tile_south.tile_south, laser_beam_tiles)
             if enemy.wizard.tile.tile_east.type == 'floor':
                 detect_lasers(enemy.wizard.tile.tile_east,laser_beam_tiles)
                 if enemy.wizard.tile.tile_east.tile_east.type == 'floor':
-                    detect_lasers(enemy.wizard.tile_east.tile_east, laser_beam_tiles)
+                    detect_lasers(enemy.wizard.tile.tile_east.tile_east, laser_beam_tiles)
             if enemy.wizard.tile.tile_west.type == 'floor':
                 detect_lasers(enemy.wizard.tile.tile_west,laser_beam_tiles)
                 if enemy.wizard.tile.tile_west.tile_west.type == 'floor':
-                    detect_lasers(enemy.wizard.tile_west.tile_west, laser_beam_tiles)
+                    detect_lasers(enemy.wizard.tile.tile_west.tile_west, laser_beam_tiles)
 
 
 
@@ -1425,8 +1413,8 @@ class AI(BaseAI):
                             dangerous = False
                     if not dangerous:
                         if not self.player.wizard.has_cast:
-                            if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                    enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                            if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(
+                                    enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                                 if enemy.wizard.health == 1:
                                     self.player.wizard.cast('Punch', enemy.wizard.tile)
                                 elif enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
@@ -1435,30 +1423,70 @@ class AI(BaseAI):
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 else:
                                     self.player.wizard.cast('Punch', enemy.wizard.tile)
-                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                                 if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                                 if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                                 if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                                 if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                 elif self.player.wizard.aether > 2:
                                     self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         self.player.wizard.move(next_tile)
+                    else:
+                        if len(item_list['health_pot']) > 0:
+                            path = find_path(item_list['health_pot'][0], False)
+                        elif len(item_list['mana_pot']) > 0:
+                            path = find_path(item_list['mana_pot'][0], False)
+                        if not self.player.wizard.has_cast:
+                            if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(
+                                    enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
+                                if enemy.wizard.health == 1:
+                                    self.player.wizard.cast('Punch', enemy.wizard.tile)
+                                elif enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
+                                    self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
+                                elif self.player.wizard.aether > 2:
+                                    self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
+                                else:
+                                    self.player.wizard.cast('Punch', enemy.wizard.tile)
+                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
+                                if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
+                                    self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
+                                elif self.player.wizard.aether > 2:
+                                    self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
+                            elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
+                                if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
+                                    self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
+                                elif self.player.wizard.aether > 2:
+                                    self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
+                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
+                                if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
+                                    self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
+                                elif self.player.wizard.aether > 2:
+                                    self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
+                            elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
+                                if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
+                                    self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
+                                elif self.player.wizard.aether > 2:
+                                    self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
+                        path.pop(0)
+
+                        next_tile = path[0]
+                        self.player.wizard.move(next_tile)
+
                 if not self.player.wizard.has_cast:
-                    if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                            enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                    if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                         if enemy.wizard.health == 1:
                             self.player.wizard.cast('Punch', enemy.wizard.tile)
                         elif enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
@@ -1467,22 +1495,22 @@ class AI(BaseAI):
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         else:
                             self.player.wizard.cast('Punch', enemy.wizard.tile)
-                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         elif self.player.wizard.aether > 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         elif self.player.wizard.aether > 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         elif self.player.wizard.aether > 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                         if enemy.wizard.health <= 6 and self.player.wizard.aether >= 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         elif self.player.wizard.aether > 2:
@@ -1501,8 +1529,7 @@ class AI(BaseAI):
                     filtered_safe_tiles.append(current_tile)
             if not any(tile.x == self.player.wizard.tile.x and tile.y == self.player.wizard.tile.y for tile in filtered_safe_tiles):
                 if not self.player.wizard.has_cast: #changed kill threshold from 5 to 8
-                    if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                            enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                    if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                         if enemy.wizard.health == 1:
                             self.player.wizard.cast('Punch', enemy.wizard.tile)
                         elif enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
@@ -1511,22 +1538,22 @@ class AI(BaseAI):
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         else:
                             self.player.wizard.cast('Punch', enemy.wizard.tile)
-                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                         if enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         elif self.player.wizard.aether > 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                         if enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         elif self.player.wizard.aether > 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                         if enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         elif self.player.wizard.aether > 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                         if enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         elif self.player.wizard.aether > 2:
@@ -1536,8 +1563,7 @@ class AI(BaseAI):
                     path.pop(0)
                     self.player.wizard.move(path[0])
                 if not self.player.wizard.has_cast: #changed kill threshold from 5 to 8
-                    if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                            enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                    if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                         if enemy.wizard.health == 1:
                             self.player.wizard.cast('Punch', enemy.wizard.tile)
                         elif enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
@@ -1546,22 +1572,22 @@ class AI(BaseAI):
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         else:
                             self.player.wizard.cast('Punch', enemy.wizard.tile)
-                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                         if enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         elif self.player.wizard.aether > 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                    elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                         if enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         elif self.player.wizard.aether > 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                         if enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         elif self.player.wizard.aether > 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                    elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                         if enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
                             self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                         elif self.player.wizard.aether > 2:
@@ -1583,8 +1609,7 @@ class AI(BaseAI):
                                 dangerous = False
                         if not dangerous:
                             if not self.player.wizard.has_cast:
-                                if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                        enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                                if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                                     if enemy.wizard.health == 1:
                                         self.player.wizard.cast('Punch', enemy.wizard.tile)
                                     elif enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
@@ -1593,30 +1618,29 @@ class AI(BaseAI):
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                     else:
                                         self.player.wizard.cast('Punch', enemy.wizard.tile)
-                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                                     if enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                     elif self.player.wizard.aether > 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                                elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                                     if enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                     elif self.player.wizard.aether > 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                                     if enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                     elif self.player.wizard.aether > 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                                elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                                     if enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                                     elif self.player.wizard.aether > 2:
                                         self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             self.player.wizard.move(next_tile)
                     if not self.player.wizard.has_cast:
-                        if abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 or abs(
-                                enemy.wizard.tile.y - self.player.wizard.tile.y) == 1:
+                        if (abs(enemy.wizard.tile.x - self.player.wizard.tile.x) == 1 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0) or (abs(enemy.wizard.tile.y - self.player.wizard.tile.y) == 1 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0):
                             if enemy.wizard.health == 1:
                                 self.player.wizard.cast('Punch', enemy.wizard.tile)
                             elif enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
@@ -1625,22 +1649,22 @@ class AI(BaseAI):
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             else:
                                 self.player.wizard.cast('Punch', enemy.wizard.tile)
-                        elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.tile_east.type == 'floor':
+                        elif enemy.wizard.tile.x - self.player.wizard.tile.x == 2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_east.type == 'floor':
                             if enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             elif self.player.wizard.aether > 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                        elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.tile_west.type == 'floor':
+                        elif enemy.wizard.tile.x - self.player.wizard.tile.x == -2 and self.player.wizard.tile.y - enemy.wizard.tile.y == 0 and self.player.wizard.tile.tile_west.type == 'floor':
                             if enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             elif self.player.wizard.aether > 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                        elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.tile_south.type == 'floor':
+                        elif enemy.wizard.tile.y - self.player.wizard.tile.y == 2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_south.type == 'floor':
                             if enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             elif self.player.wizard.aether > 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
-                        elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.tile_north.type == 'floor':
+                        elif enemy.wizard.tile.y - self.player.wizard.tile.y == -2 and self.player.wizard.tile.x - enemy.wizard.tile.x == 0 and self.player.wizard.tile.tile_north.type == 'floor':
                             if enemy.wizard.health <= 8 and self.player.wizard.aether >= 2:
                                 self.player.wizard.cast('Fire Slash', enemy.wizard.tile)
                             elif self.player.wizard.aether > 2:
